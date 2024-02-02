@@ -27,13 +27,28 @@ df.info()
 
 st.header("Panorama Macro")
 
-st.line_chart(df, x='Ano-Mês', y="SELIC")
+opcao = st.selectbox(
+    'Qual indicador deseja analisar?',
+    ('SELIC (%)', 'IPCA (%)', 'Câmbio R$/US$'))
+
+st.write('Você escolheu:', opcao)
+
+if opcao == 'SELIC (%)':
+   cl = "SELIC"
+ 
+elif opcao == 'IPCA (%)':
+    cl = "IPCA"
+ 
+else:
+    cl = "CAMB"
+
+st.line_chart(df, x='Ano-Mês', y=cl)
 
 col1, col2, col3 = st.columns(3)
 
-ult_linha = dados.DT.ult_dado("SELIC", df)
-var_linha = dados.DT.var_dado("SELIC", df)
+ult_linha = dados.DT.ult_dado(cl, df)
+var_linha = dados.DT.var_dado(cl, df)
 var_perc = ((var_linha / ult_linha)*100).round(2)
 
-col1.metric("SELIC", str(ult_linha) + " %", str(var_perc) +" %")
+col1.metric(opcao, str(ult_linha) + " %", str(var_perc) +" %")
 
