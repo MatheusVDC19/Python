@@ -25,10 +25,6 @@ df.rename(columns={'IPCA_y' : 'IPCA'}, inplace= True)
 df['Ano-Mês'] = df.index
 df.info()
 
-#Exportando dados em Excel
-df.to_excel('Dados.xlsx')
-
-
 st.header("Panorama Macro")
 
 st.line_chart(df, x='Ano-Mês', y="SELIC")
