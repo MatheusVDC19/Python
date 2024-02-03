@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import statsmodels
 from statsmodels.tsa.vector_ar.vecm import VECM
 
 class modelo:
