@@ -1,7 +1,6 @@
 import pandas as pd
 
-
-class DT:
+class dataframe:
 
     def extracao_bcb(codigo, data_inicio, data_fim):
 
