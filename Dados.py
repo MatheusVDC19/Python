@@ -12,6 +12,7 @@ class dataframe:
 
         return df
     
+    
     def unir_DFs(df1, df2, df3):
 
         df12 = pd.merge(df1, df2, how='inner', on='Ano-Mês')
@@ -36,3 +37,21 @@ class dataframe:
         var_dado =  ult_dado - Pult_dado
 
         return var_dado
+    
+    
+    def ult_mes_ano (df, cl_data, data, cl):
+
+        valor = df.loc[df[cl_data]==data, [cl]].values.round(2)
+
+        valor = valor [0,0]
+
+        return valor
+
+    def var_12M(cl, df, cl_data, dataIN, dataOUT):
+
+        valorIN = dataframe.ult_mes_ano (df, cl_data, dataIN, cl)
+        valorOUT = dataframe.ult_mes_ano (df, cl_data, dataOUT, cl)
+
+        var_12M = (((valorOUT - valorIN) / valorIN)*100).round(2)
+
+        return var_12M

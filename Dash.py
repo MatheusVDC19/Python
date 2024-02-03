@@ -36,7 +36,7 @@ opcao = st.selectbox(
 if opcao == 'SELIC (%)':
    cl = "SELIC"
    tipo = " %"
-   dif = 4
+   dif = 8
    coint = 1
    tend = "li"
    pfrente = 24
@@ -45,8 +45,8 @@ if opcao == 'SELIC (%)':
 elif opcao == 'IPCA (%)':
     cl = "IPCA"
     tipo = " %"
-    dif = 3
-    coint = 2
+    dif = 6
+    coint = 1
     tend = "li"
     pfrente = 24
     index = 1
@@ -54,9 +54,9 @@ elif opcao == 'IPCA (%)':
 else:
     cl = "CAMB"
     tipo = " R$"
-    dif = 4
+    dif = 6
     coint = 1
-    tend = "co"
+    tend = "li"
     pfrente = 24
     index = 2
 
@@ -76,7 +76,18 @@ st.line_chart(df, x='Ano-Mês', y=cl, color=	"#40E0D0")
 
 st.header("Projeção 24 meses à frente")
 df_proj = md.modelo.vecm(df, cl, dif, coint, tend, pfrente, index)
-st.line_chart(df_proj, x='Ano-Mês', y=cl, color="#FF4500")
+
+
+col1, col2, col3, col4 = st.columns(4)
+
+col1.metric("Projeção para 2024-12" , str(dd.dataframe.ult_mes_ano(df_proj, "Ano-Mês", "2024-12", cl)) + tipo, str(dd.dataframe.var_12M(cl, df_proj, "Ano-Mês", "2024-01", "2024-12"))+" %")
+col2.metric("Projeção para 2025-12" , str(dd.dataframe.ult_mes_ano(df_proj, "Ano-Mês", "2025-12", cl)) + tipo, str(dd.dataframe.var_12M(cl, df_proj, "Ano-Mês", "2025-01", "2025-12"))+" %")
+col3.metric("Máxima Projetada", str(df_proj[cl].max().round(2)) + tipo)
+col4.metric("Mínima Projetada", str(df_proj[cl].min().round(2)) + tipo)
+
+
+st.line_chart(df_proj, x='Ano-Mês', y=cl, color="#0099ff")
+
 
 
 
