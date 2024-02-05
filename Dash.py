@@ -1,12 +1,13 @@
 import streamlit as st
+import datetime as dt
 import Dados as dd
 import Modelo as md
 import warnings
 warnings.filterwarnings("ignore") 
 
-data_inicio = "01/01/2004"
-data_fim = "01/01/2024"
-
+#Definindo Datas
+data_inicio = "01/01/2000"
+data_fim = dt.date.today().strftime("%d/%m/%Y")
 
 #Baixando Dados via API
 df_IPCA = dd.dataframe.extracao_bcb(13522, data_inicio, data_fim)
@@ -19,14 +20,9 @@ df_CAMB = dd.dataframe.extracao_bcb(3697, data_inicio, data_fim)
 df_CAMB.rename(columns={'valor': 'CAMB'}, inplace = True)
 
 #Unindo os Dataframes
-df = dd.dataframe.unir_DFs( df_SELIC, df_IPCA, df_CAMB)
+df = dd.dataframe.unir_DFs( df_SELIC, "SELIC", df_IPCA, "IPCA", df_CAMB, "CAMB")
 
-
-#Tratando Coluna duplicada
-df.drop(columns=['IPCA_x'], inplace= True)
-df.rename(columns={'IPCA_y' : 'IPCA'}, inplace= True)
-df['Ano-Mês'] = df.index
-
+#Título da Página
 st.markdown("<h1 style='text-align: center; color: 	#B0E0E6;'>Panorama Macro</h1>", unsafe_allow_html=True)
 
 opcao = st.selectbox(
@@ -36,7 +32,7 @@ opcao = st.selectbox(
 if opcao == 'SELIC (%)':
    cl = "SELIC"
    tipo = " %"
-   dif = 8
+   dif = 4
    coint = 1
    tend = "li"
    pfrente = 24
@@ -45,8 +41,8 @@ if opcao == 'SELIC (%)':
 elif opcao == 'IPCA (%)':
     cl = "IPCA"
     tipo = " %"
-    dif = 6
-    coint = 1
+    dif = 3
+    coint = 2
     tend = "li"
     pfrente = 24
     index = 1
@@ -54,9 +50,9 @@ elif opcao == 'IPCA (%)':
 else:
     cl = "CAMB"
     tipo = " R$"
-    dif = 6
+    dif = 4
     coint = 1
-    tend = "li"
+    tend = "co"
     pfrente = 24
     index = 2
 
@@ -77,7 +73,6 @@ st.line_chart(df, x='Ano-Mês', y=cl, color=	"#40E0D0")
 st.header("Projeção 24 meses à frente")
 df_proj = md.modelo.vecm(df, cl, dif, coint, tend, pfrente, index)
 
-
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("Projeção para 2024-12" , str(dd.dataframe.ult_mes_ano(df_proj, "Ano-Mês", "2024-12", cl)) + tipo, str(dd.dataframe.var_12M(cl, df_proj, "Ano-Mês", "2024-01", "2024-12"))+" %")
@@ -87,7 +82,4 @@ col4.metric("Mínima Projetada", str(df_proj[cl].min().round(2)) + tipo)
 
 
 st.line_chart(df_proj, x='Ano-Mês', y=cl, color="#0099ff")
-
-
-
 
