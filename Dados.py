@@ -2,25 +2,23 @@ import pandas as pd
 
 class dataframe:
 
-    def extracao_bcb(codigo, data_inicio, data_fim):
+    def extracao_bcb(codigo, data_inicio, data_fim, cl):
 
         url = 'https://api.bcb.gov.br/dados/serie/bcdata.sgs.{}/dados?formato=json&dataInicial={}&dataFinal={}'.format(codigo, data_inicio, data_fim)
         df = pd.read_json(url)
         df.set_index('data', inplace = True)
         df.index.name = 'Ano-Mês'
         df.index = pd.to_datetime(df.index, dayfirst= True)
+        df.rename(columns={'valor': cl}, inplace = True)
 
         return df
     
     
-    def unir_DFs(df1, cl1, df2, cl2, df3, cl3):
+    def unir_DFs(df1, cl1, df2, cl2, df3, cl3, df4, cl4):
 
-        df12 = pd.merge(df1, df2, how='inner', on='Ano-Mês')
-        df23 = pd.merge(df2, df3, how='inner', on='Ano-Mês')
-        df = pd.merge(df12, df23, how='inner', on='Ano-Mês', suffixes=(".",""))
-
-        df.drop(columns=[cl2+'.'], inplace= True)
-
+        df = pd.merge(df1, df2, how='inner', on='Ano-Mês')
+        df = pd.merge(df, df3, how='inner', on='Ano-Mês')
+        df = pd.merge(df, df4, how='inner', on='Ano-Mês')
         df['Ano-Mês'] = df.index
 
         return df

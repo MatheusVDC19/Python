@@ -10,6 +10,13 @@ class modelo:
         df_temp = df.copy()
         df_proj = df.copy()
         del df_proj["Ano-Mês"]
+        
+        if cl == "SELIC":
+             del df_proj["DES"]
+        elif cl == "IPCA":
+            del df_proj["DES"]
+        elif cl == "CAMB":
+            del df_proj["DES"]
 
         df_proj = np.asarray(df_proj)
 

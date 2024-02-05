@@ -6,31 +6,29 @@ import warnings
 warnings.filterwarnings("ignore") 
 
 #Definindo Datas
-data_inicio = "01/01/2000"
+data_inicio = "01/01/2004"
 data_fim = dt.date.today().strftime("%d/%m/%Y")
 
 #Baixando Dados via API
-df_IPCA = dd.dataframe.extracao_bcb(13522, data_inicio, data_fim)
-df_IPCA.rename(columns={'valor': 'IPCA'}, inplace = True)
-
-df_SELIC = dd.dataframe.extracao_bcb(432, data_inicio, data_fim)
-df_SELIC.rename(columns={'valor': 'SELIC'}, inplace = True)
-
-df_CAMB = dd.dataframe.extracao_bcb(3697, data_inicio, data_fim)
-df_CAMB.rename(columns={'valor': 'CAMB'}, inplace = True)
+df_IPCA = dd.dataframe.extracao_bcb(13522, data_inicio, data_fim, "IPCA")
+df_SELIC = dd.dataframe.extracao_bcb(432, data_inicio, data_fim, "SELIC")
+df_CAMB = dd.dataframe.extracao_bcb(3697, data_inicio, data_fim, "CAMB")
+df_DES = dd.dataframe.extracao_bcb(24369, data_inicio, data_fim, "DES")
 
 #Unindo os Dataframes
-df = dd.dataframe.unir_DFs( df_SELIC, "SELIC", df_IPCA, "IPCA", df_CAMB, "CAMB")
+df = dd.dataframe.unir_DFs( df_SELIC, "SELIC", df_IPCA, "IPCA", df_CAMB, "CAMB", df_DES, "DES")
 
+df.to_excel("a.xlsx")
 #Título da Página
 st.markdown("<h1 style='text-align: center; color: 	#B0E0E6;'>Panorama Macro</h1>", unsafe_allow_html=True)
 
 opcao = st.selectbox(
     'Qual indicador deseja analisar?',
-    ('SELIC (%)', 'IPCA (%)', 'Câmbio'))
+    ('SELIC (%)', 'IPCA (%)','Desemprego (%)','Câmbio (Real/Dólar)'))
 
 if opcao == 'SELIC (%)':
    cl = "SELIC"
+   cl2 = "IPCA"
    tipo = " %"
    dif = 4
    coint = 1
@@ -40,21 +38,34 @@ if opcao == 'SELIC (%)':
    
 elif opcao == 'IPCA (%)':
     cl = "IPCA"
+    cl2 = "DES"
     tipo = " %"
-    dif = 3
-    coint = 2
-    tend = "li"
+    dif = 4
+    coint = 1
+    tend = "ci"
     pfrente = 24
     index = 1
 
-else:
+elif opcao == 'Câmbio (Real/Dólar)':
     cl = "CAMB"
+    cl2 = "SELIC"
     tipo = " R$"
     dif = 4
     coint = 1
-    tend = "co"
+    tend = "ci"
     pfrente = 24
     index = 2
+
+elif opcao == 'Desemprego (%)':
+    cl = "DES"
+    cl2 = "IPCA"
+    tipo = " %"
+    dif = 4
+    coint = 1
+    tend = "ci"
+    pfrente = 24
+    index = 3
+    
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -83,3 +94,5 @@ col4.metric("Mínima Projetada", str(df_proj[cl].min().round(2)) + tipo)
 
 st.line_chart(df_proj, x='Ano-Mês', y=cl, color="#0099ff")
 
+st.header("Relações Econômicas")
+st.line_chart(df, x=cl2, y=cl, color="#00FA9A")
