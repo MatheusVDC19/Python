@@ -18,7 +18,6 @@ df_DES = dd.dataframe.extracao_bcb(24369, data_inicio, data_fim, "DES")
 #Unindo os Dataframes
 df = dd.dataframe.unir_DFs( df_SELIC, "SELIC", df_IPCA, "IPCA", df_CAMB, "CAMB", df_DES, "DES")
 
-df.to_excel("a.xlsx")
 #Título da Página
 st.markdown("<h1 style='text-align: center; color: 	#B0E0E6;'>Panorama Macro</h1>", unsafe_allow_html=True)
 
