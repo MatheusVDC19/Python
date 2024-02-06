@@ -52,8 +52,10 @@ if opcao == 'SELIC (%)':
 
    #Número de Cointegrações
    coint = 1
-
+ 
    #Forma da tendência(li: tendência exógena, lo: tendência endógena, ci: constante exógena, co: constante endógena)
+   tend = "li"
+
    pfrente = 24
 
    #Posição da variável no vetor da projeções
