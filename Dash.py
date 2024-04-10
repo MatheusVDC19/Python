@@ -1,135 +1,170 @@
 # Instale o Streamlit: pip install streamlit
-
 #Importando as bibliotecas que serão utilizadas
 import streamlit as st
 import datetime as dt
-
-#Importando os outras duas camadas do programa: Dados e Modelo
-import Dados as dd
-import Modelo as md
-
+import pandas as pd
 #Retirando avisos chatos
 import warnings
 warnings.filterwarnings("ignore") 
 
-#Definindo Datas
-data_inicio = "01/01/2004"
-#Seta a data de Hoje
-data_fim = dt.date.today().strftime("%d/%m/%Y")
 
-#Baixando Dados via API
-df_IPCA = dd.dataframe.extracao_bcb(13522, data_inicio, data_fim, "IPCA")
-df_SELIC = dd.dataframe.extracao_bcb(432, data_inicio, data_fim, "SELIC")
-df_CAMB = dd.dataframe.extracao_bcb(3697, data_inicio, data_fim, "CAMB")
-df_DES = dd.dataframe.extracao_bcb(24369, data_inicio, data_fim, "DES")
+def isnumber(value):
+    try:
+         float(value)
+    except ValueError:
+         return False
+    return True
 
-#Unindo os Dataframes
-df = dd.dataframe.unir_DFs( df_SELIC, "SELIC", df_IPCA, "IPCA", df_CAMB, "CAMB", df_DES, "DES")
 
 #Título da Página
-st.markdown("<h1 style='text-align: center; color: 	#B0E0E6;'>Panorama Macro</h1>", unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
+col2.image('Logo.png', width=100, use_column_width="always" )
 
-#Configurando o selectbox
-opcao = st.selectbox(
-    'Qual indicador deseja analisar?',
-    ('SELIC (%)', 'IPCA (%)','Desemprego (%)','Câmbio (Real/Dólar)'))
+col1,= st.columns(1)
+col1.markdown("<h1 style='text-align: center; color: 	#C9D200;'>Mesa de Precificação</h1>", unsafe_allow_html=True)
+col1.markdown("<h1></h1>", unsafe_allow_html=True)
 
+#Taxas
+with st.container(border=True):
+    p_col1, p_col2, p_col3, p_col4 = st.columns(4)
 
-#Setando os parâmetros necessários para cada escolha de indicador
-if opcao == 'SELIC (%)':
-   #Coluna alvo
-   cl = "SELIC"
+#Carregando dados
+df_despesas = pd.read_excel("Base.xlsx",sheet_name='Despesas')
+df_cred = pd.read_excel("Base.xlsx",sheet_name='Crédito')
+df_CDI = pd.read_excel("Base.xlsx",sheet_name='CDI')
 
-   #Coluna secundária para o gráfico
-   cl2 = "IPCA"
+custo_cred_med = (-1*df_despesas["Despesa ADM"].sum() / df_despesas["Saldo Devedor (PA)"].sum())
+custo_cred_med = round(custo_cred_med*100,2)
 
-   #Forma da variável
-   tipo = " %"
+inad_med = (df_cred["Provisão"].sum() / df_cred["Saldo Devedor"].sum()) * 100
+inad_med = round(((1+inad_med/100)**(1/12)-1)*100,2)
 
-   #Parâmetros do Modelo - VECM
-   #Número de Defasagens
-   dif = 4
-
-   #Número de Cointegrações
-   coint = 1
- 
-   #Forma da tendência(li: tendência exógena, lo: tendência endógena, ci: constante exógena, co: constante endógena)
-   tend = "li"
-
-   pfrente = 24
-
-   #Posição da variável no vetor da projeções
-   index = 0
-   
-elif opcao == 'IPCA (%)':
-    cl = "IPCA"
-    cl2 = "DES"
-    tipo = " %"
-    dif = 4
-    coint = 1
-    tend = "ci"
-    pfrente = 24
-    index = 1
-
-elif opcao == 'Câmbio (Real/Dólar)':
-    cl = "CAMB"
-    cl2 = "SELIC"
-    tipo = " R$"
-    dif = 4
-    coint = 1
-    tend = "ci"
-    pfrente = 24
-    index = 2
-
-elif opcao == 'Desemprego (%)':
-    cl = "DES"
-    cl2 = "IPCA"
-    tipo = " %"
-    dif = 4
-    coint = 1
-    tend = "ci"
-    pfrente = 24
-    index = 3
+with st.expander("Parâmetros"):
     
-#Configurando layout da colunas no streamlit
-col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns([1.5,4,6])
 
-#Últimpo valor para o indicador
-ult_linha = dd.dataframe.ult_dado(cl, df).round(2)
-#Variação
-var_linha = dd.dataframe.var_dado(cl, df)
-#Variação Percentual
-var_perc = ((var_linha / ult_linha)*100).round(2)
+    df_cred.sort_values(by="Número PA", ascending=True)
 
-#Últimpo valor para o indicador
-col1.metric(opcao, str(ult_linha) + tipo, str(var_perc) +" %")
-#Média Histórica
-col2.metric("Média Histórica" , str(df[cl].mean().round(2)) + tipo)
-#Máxima Histórica
-col3.metric("Máxima Histórica", str(df[cl].max().round(2)) + tipo)
-#Mínima Histórica
-col4.metric("Mínima Histórica", str(df[cl].min().round(2)) + tipo)
+    PA = col1.selectbox("PA", df_cred["Número PA"].unique())
 
-st.header("Série Histórica")
-#Gráfico de série temporal
-st.line_chart(df, x='Ano-Mês', y=cl, color=	"#40E0D0")
+    df_cred = df_cred[df_cred["Número PA"] == PA]
+    df_despesas = df_despesas[df_despesas["Número PA"] == PA]
 
-st.header("Projeção 24 meses à frente")
-#Projetando os valores dos indicadores 24 passos à frente
-df_proj = md.modelo.vecm(df, cl, dif, coint, tend, pfrente, index)
+    m_col1, m_col2, m_col3, m_col4 = st.columns(4)
 
-col1, col2, col3, col4 = st.columns(4)
+    pessoa = m_col1.selectbox("Tipo de Pessoa", df_cred["Tipo Pessoa"].unique())
+    df_cred = df_cred[df_cred["Tipo Pessoa"] == pessoa]  
 
-#Mostrando a projeção
-col1.metric("Projeção para 2024-12" , str(dd.dataframe.ult_mes_ano(df_proj, "Ano-Mês", "2024-12", cl)) + tipo, str(dd.dataframe.var_12M(cl, df_proj, "Ano-Mês", "2024-01", "2024-12"))+" %")
-col2.metric("Projeção para 2025-12" , str(dd.dataframe.ult_mes_ano(df_proj, "Ano-Mês", "2025-12", cl)) + tipo, str(dd.dataframe.var_12M(cl, df_proj, "Ano-Mês", "2025-01", "2025-12"))+" %")
-col3.metric("Máxima Projetada", str(df_proj[cl].max().round(2)) + tipo)
-col4.metric("Mínima Projetada", str(df_proj[cl].min().round(2)) + tipo)
+    risco = m_col2.selectbox("Risco", df_cred["Risco BACEN"].unique())
+    df_cred = df_cred[df_cred["Risco BACEN"] == risco]  
 
+    Carteira = col2.selectbox("Carteira", df_cred["Carteira"].unique())
 
-st.line_chart(df_proj, x='Ano-Mês', y=cl, color="#0099ff")
+    df_cred = df_cred[df_cred["Carteira"] == Carteira]
 
+    Linha = col3.selectbox("Linha", df_cred["Linha Simplificada"].unique())
 
-#Gráfico de Relações Econômicas
-st.header("Relações Econômicas")
-st.line_chart(df, x=cl2, y=cl, color="#00FA9A")
+    df_cred = df_cred[df_cred["Linha Simplificada"] == Linha]
+    
+    tx_final = 0.00
+    cdi = df_CDI["CDI"].max() * 100
+
+    custo_cred = (-1*df_despesas["Despesa ADM"].sum()/ df_despesas["Saldo Devedor (PA)"].sum())
+    custo_cred = ((1+ custo_cred)**(12)-1)*100
+
+    tx_inad = (df_cred["Provisão"].sum() / df_cred["Saldo Devedor"].sum()) * 100
+
+    tx_final = tx_final + custo_cred
+
+    #Natureza da Taxa
+    taxa_op = m_col3.selectbox(
+        'Natureza da taxa?',
+        ('Pré-fixada', 'Pós-fixada'))
+
+    if taxa_op == "Pré-fixada":
+        tx_final = tx_final
+        tx_op = 0.00
+    elif taxa_op == "Pós-fixada":
+        tx_final = tx_final + cdi
+        tx_op = cdi
+        
+    #INAD
+    inad_op = m_col4.selectbox(
+        'Considerar o INAD?',
+        ('Sim', 'Não'))
+
+    if inad_op == "Não":
+        tx_final = tx_final
+        tx_inad = 0.00
+        
+    elif inad_op == "Sim":
+        
+        tx_final = tx_final + tx_inad
+
+with st.expander("Spread (%)"):
+    col1, col2, col3 = st.columns([2,1,1])
+     
+    #Spread
+    spread_op = col1.text_input("Spread em termos do CDI (%)",
+            "0",
+            key="spread_op",
+        )
+    
+    spread = 0
+    if isnumber(spread_op) == True and spread_op !=0:
+        spread = float(spread_op)
+        spread_op = cdi * float(spread_op)/100
+        tx_final = tx_final + spread_op
+    else:
+        tx_final = tx_final
+        spread_op = 0.00
+
+    cdi_am = round(((1+(cdi/100))**(1/12)-1)*100,2)
+    col2.metric("CDI (a.m)" , f"{cdi_am}%")
+    col3.metric("Spread em CDI (a.m)" , f"{round((spread/100)*cdi_am,2)}%")
+
+with st.expander("Redutores (%)"):
+    col1, col2 = st.columns(2)
+    
+    #RedutorCC
+    redutorCC_op = col1.text_input("Redutor do Custo de Crédito (%)",
+            "0",
+            key="redutorCC_op",
+        )
+
+    if isnumber(redutorCC_op) == True and redutorCC_op !=0:
+        custo_cred = custo_cred - (custo_cred * (float(redutorCC_op)/100))
+        tx_final = tx_inad + tx_op + custo_cred + spread_op
+    else:
+        tx_final = tx_final
+        
+    #RedutorTB  
+    redutorTB_op = col2.text_input("Rebate da Taxa de Balcão (%)",
+            "0",
+            key="redutorTB_op",
+        )
+
+    if isnumber(redutorTB_op) == True and redutorTB_op !=0:
+        tx_final = tx_final - (tx_final * (float(redutorTB_op)/100))
+    else:
+        tx_final = tx_final
+        
+    custo_cred_am = round(((1+custo_cred/100)**(1/12)-1)*100,2)
+    tx_inad_am = round(((1+tx_inad/100)**(1/12)-1)*100,2)
+    tx_final_am = round((((1 + tx_final/100)**(1/12)-1)*100),2)
+    tx_final_aa = round(tx_final, 2)
+    cdi_am = round(((1+cdi/100)**(1/12)-1)*100,2)
+    cdi_aa = cdi
+        
+
+#Taxas    
+
+p_col1.metric("Custo do Crédito (a.m)" , f"{custo_cred_am}%", f"{round(custo_cred_med - custo_cred_am,2)}%" )
+p_col2.metric("Inadimplência (a.m)" , f"{tx_inad_am}%", f"{round(inad_med - tx_inad_am,2)}%")
+p_col3.metric("Taxa Base (a.m) " , f"{tx_final_am }%", f"{round(tx_final_am - cdi_am,2)} p.p CDI (a.m)")
+p_col4.metric("Taxa Base (a.a)" , f"{tx_final_aa }%", f"{round(tx_final_aa - cdi_aa,2)} p.p CDI (a.a)")
+
+col1, col2, col3 = st.columns([1,4,1])
+col2.write("Desenvolvido pela equipe de BI no departamento de Controladoria!")
+col1, col2 = st.columns([2,3])
+col2.image('Selo.png', width=110)

@@ -1,2 +1,2 @@
-# Python
-Python Repository
+# PREC
+Precificação
